@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,6 +22,8 @@ func main() {
 
 	status := run(ctx, cancel, *httpPort, *dataDir)
 	cancel()
+
+	log.Print("Linko is shutting down")
 	os.Exit(status)
 }
 
@@ -36,6 +39,7 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 		serverErr = s.start()
 	}()
 
+	log.Printf("Linko is running on http://localhost:%d", httpPort)
 	<-ctx.Done()
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
