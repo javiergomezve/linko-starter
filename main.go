@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -26,7 +27,7 @@ func main() {
 }
 
 func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir string) int {
-	standarLogger := log.New(os.Stderr, "DEBUG: ", log.LstdFlags)
+	logger := initializeLogger()
 
 	file, err := os.OpenFile(
 		"linko.access.log",
@@ -38,34 +39,52 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 	}
 	defer file.Close()
 
-	accessLogger := log.New(file, "INFO: ", log.Ldate|log.Ltime|log.Lmsgprefix)
-
-	st, err := store.New(dataDir, standarLogger)
+	st, err := store.New(dataDir, logger)
 	if err != nil {
-		standarLogger.Printf("failed to create store: %v\n", err)
+		logger.Printf("failed to create store: %v\n", err)
 		return 1
 	}
-	s := newServer(*st, httpPort, cancel, accessLogger)
+	s := newServer(*st, httpPort, cancel, logger)
 	var serverErr error
 	go func() {
 		serverErr = s.start()
 	}()
 
-	standarLogger.Printf("Linko is running on http://localhost:%d", httpPort)
+	logger.Printf("Linko is running on http://localhost:%d", httpPort)
 	<-ctx.Done()
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := s.shutdown(shutdownCtx); err != nil {
-		standarLogger.Printf("failed to shutdown server: %v\n", err)
+		logger.Printf("failed to shutdown server: %v\n", err)
 		return 1
 	}
 	if serverErr != nil {
-		standarLogger.Printf("server error: %v\n", serverErr)
+		logger.Printf("server error: %v\n", serverErr)
 		return 1
 	}
 
-	standarLogger.Print("Linko is shutting down")
+	logger.Print("Linko is shutting down")
 
 	return 0
+}
+
+func initializeLogger() *log.Logger {
+	logFile := os.Getenv("LINKO_LOG_FILE")
+	if logFile != "" {
+		file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
+		if err != nil {
+			log.Fatalf("failed to open log file: %v", err)
+		}
+
+		multiWritter := io.MultiWriter(os.Stderr, file)
+		logger := log.New(multiWritter, "INFO: ", log.LstdFlags)
+
+		return logger
+	}
+
+	multiWritter := io.MultiWriter(os.Stderr)
+	logger := log.New(multiWritter, "INFO: ", log.LstdFlags)
+
+	return logger
 }
