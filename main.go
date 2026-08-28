@@ -1,12 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"flag"
 	"fmt"
-	"io"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,13 +39,14 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 		0o644,
 	)
 	if err != nil {
-		log.Fatal(err)
+		logger.Info(err.Error())
+		return 1
 	}
 	defer file.Close()
 
 	st, err := store.New(dataDir, logger)
 	if err != nil {
-		logger.Printf("failed to create store: %v\n", err)
+		logger.Info(fmt.Sprintf("failed to create store: %v\n", err))
 		return 1
 	}
 	s := newServer(*st, httpPort, cancel, logger)
@@ -56,47 +55,53 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 		serverErr = s.start()
 	}()
 
-	logger.Printf("Linko is running on http://localhost:%d", httpPort)
+	logger.Info(fmt.Sprintf("Linko is running on http://localhost:%d", httpPort))
 	<-ctx.Done()
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := s.shutdown(shutdownCtx); err != nil {
-		logger.Printf("failed to shutdown server: %v\n", err)
+		logger.Info(fmt.Sprintf("failed to shutdown server: %v\n", err))
 		return 1
 	}
 	if serverErr != nil {
-		logger.Printf("server error: %v\n", serverErr)
+		logger.Info(fmt.Sprintf("server error: %v\n", serverErr))
 		return 1
 	}
 
-	logger.Print("Linko is shutting down")
+	logger.Info("Linko is shutting down")
 
 	closeLogger()
 
 	return 0
 }
 
-func initializeLogger(logFile string) (*log.Logger, func() error, error) {
-	if logFile != "" {
-		file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to open log file: %w", err)
-		}
+func initializeLogger(_ string) (*slog.Logger, func() error, error) {
+	l := slog.New(
+		slog.NewTextHandler(os.Stderr, nil),
+	)
 
-		bufferedFile := bufio.NewWriterSize(file, 8192)
-		multiWriter := io.MultiWriter(os.Stderr, bufferedFile)
-
-		close := func() error {
-			if err := bufferedFile.Flush(); err != nil {
-				file.Close()
-				return fmt.Errorf("failed to flush log buffer: %w", err)
-			}
-			return file.Close()
-		}
-
-		return log.New(multiWriter, "", log.LstdFlags), close, nil
-	}
-
-	return log.New(os.Stderr, "", log.LstdFlags), func() error { return nil }, nil
+	return l, nil, nil
+	//
+	// if logFile != "" {
+	// 	file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
+	// 	if err != nil {
+	// 		return nil, nil, fmt.Errorf("failed to open log file: %w", err)
+	// 	}
+	//
+	// 	bufferedFile := bufio.NewWriterSize(file, 8192)
+	// 	multiWriter := io.MultiWriter(os.Stderr, bufferedFile)
+	//
+	// 	close := func() error {
+	// 		if err := bufferedFile.Flush(); err != nil {
+	// 			file.Close()
+	// 			return fmt.Errorf("failed to flush log buffer: %w", err)
+	// 		}
+	// 		return file.Close()
+	// 	}
+	//
+	// 	return log.New(multiWriter, "", log.LstdFlags), close, nil
+	// }
+	//
+	//return log.New(os.Stderr, "", log.LstdFlags), func() error { return nil }, nil
 }
