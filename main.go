@@ -36,7 +36,9 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 
 	st, err := store.New(dataDir, logger)
 	if err != nil {
-		logger.Error(fmt.Sprintf("failed to create store: %v", err))
+		logger.Error("failed to create store",
+			"error", err,
+		)
 		return 1
 	}
 	s := newServer(*st, httpPort, cancel, logger)
@@ -51,11 +53,15 @@ func run(ctx context.Context, cancel context.CancelFunc, httpPort int, dataDir s
 	defer cancel()
 
 	if err := s.shutdown(shutdownCtx); err != nil {
-		logger.Error(fmt.Sprintf("failed to shutdown server: %v", err))
+		logger.Error("failed to shutdown server",
+			"error", err,
+		)
 		return 1
 	}
 	if serverErr != nil {
-		logger.Error(fmt.Sprintf("server error: %v", serverErr))
+		logger.Error("server error",
+			"error", serverErr,
+		)
 		return 1
 	}
 
