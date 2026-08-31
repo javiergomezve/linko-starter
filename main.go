@@ -89,7 +89,7 @@ func initializeLogger(logFile string) (*slog.Logger, func() error, error) {
 	}
 
 	bufferedFile := bufio.NewWriterSize(file, 8192)
-	fileHandler := slog.NewTextHandler(bufferedFile, &slog.HandlerOptions{
+	fileHandler := slog.NewJSONHandler(bufferedFile, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	})
 
