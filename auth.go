@@ -34,7 +34,7 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 		ok, err := s.validatePassword(password, stored)
 		if err != nil {
 			s.logger.Error("error validating password",
-				"username", username,
+				"user", username,
 				"error", err,
 			)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -54,11 +54,10 @@ func (s *server) validatePassword(password, stored string) (bool, error) {
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		return false, nil
 	}
+
 	if err != nil {
-		s.logger.Error("error validating password",
-			"error", err,
-		)
 		return false, err
 	}
+
 	return true, nil
 }
