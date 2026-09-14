@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"io"
 	"log/slog"
 	"net/http"
 	"time"
 )
+
+const xrequestIDKey = "X-Request-ID"
 
 const logContextKey contextKey = "log_context"
 
@@ -72,6 +75,7 @@ func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 				slog.Int("request_body_bytes", spyReader.bytesRead),
 				slog.Int("response_status", spyWriter.statusCode),
 				slog.Int("response_body_bytes", spyWriter.bytesWritten),
+				slog.String("request_id", w.Header().Get(xrequestIDKey)),
 			}
 
 			if logContext.Username != "" {
@@ -93,4 +97,17 @@ func httpError(ctx context.Context, w http.ResponseWriter, status int, err error
 	}
 
 	http.Error(w, err.Error(), status)
+}
+
+func requestIdMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		reqID := r.Header.Get(xrequestIDKey)
+		if reqID == "" {
+			reqID = rand.Text()
+		}
+
+		w.Header().Set(xrequestIDKey, reqID)
+
+		next.ServeHTTP(w, r)
+	})
 }
