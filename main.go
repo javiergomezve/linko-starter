@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"flag"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/lmittmann/tint"
 	isatty "github.com/mattn/go-isatty"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"boot.dev/linko/internal/build"
 	"boot.dev/linko/internal/linkoerr"
@@ -99,23 +99,21 @@ func initializeLogger(logFile string) (*slog.Logger, func() error, error) {
 		return slog.New(stderrHandler), noop, nil
 	}
 
-	file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o644)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to open log file: %w", err)
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   logFile,
+		MaxSize:    1, // megabytes
+		MaxBackups: 3,
+		MaxAge:     28, // days
+		Compress:   true,
 	}
 
-	bufferedFile := bufio.NewWriterSize(file, 8192)
-	fileHandler := slog.NewJSONHandler(bufferedFile, &slog.HandlerOptions{
+	fileHandler := slog.NewJSONHandler(lumberjackLogger, &slog.HandlerOptions{
 		Level:       slog.LevelInfo,
 		ReplaceAttr: replaceAttr,
 	})
 
 	closeLogger := func() error {
-		if err := bufferedFile.Flush(); err != nil {
-			file.Close()
-			return fmt.Errorf("failed to flush log buffer: %w", err)
-		}
-		return file.Close()
+		return lumberjackLogger.Close()
 	}
 
 	logger := slog.New(slog.NewMultiHandler(stderrHandler, fileHandler))
