@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 )
 
@@ -96,7 +97,12 @@ func httpError(ctx context.Context, w http.ResponseWriter, status int, err error
 		logCtx.Error = err
 	}
 
-	http.Error(w, err.Error(), status)
+	rawError := err.Error()
+	if slices.Contains([]int{401, 403, 500}, status) {
+		rawError = http.StatusText(status)
+	}
+
+	http.Error(w, rawError, status)
 }
 
 func requestIdMiddleware(next http.Handler) http.Handler {
