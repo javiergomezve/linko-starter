@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"slices"
 	"time"
@@ -71,7 +73,7 @@ func requestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			attrs := []any{
 				"method", r.Method,
 				"path", r.URL.Path,
-				"client_ip", r.RemoteAddr,
+				"client_ip", redactIP(r.RemoteAddr),
 				slog.Duration("duration", time.Since(start)),
 				slog.Int("request_body_bytes", spyReader.bytesRead),
 				slog.Int("response_status", spyWriter.statusCode),
@@ -116,4 +118,19 @@ func requestIdMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func redactIP(addr string) string {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		host = addr
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return host
+	}
+	if ip4 := ip.To4(); ip4 != nil {
+		return fmt.Sprintf("%d.%d.%d.x", ip4[0], ip4[1], ip4[2])
+	}
+	return ip.String()
 }
