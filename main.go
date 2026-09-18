@@ -6,8 +6,11 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/signal"
+	"slices"
+	"strings"
 	"syscall"
 	"time"
 
@@ -164,6 +167,21 @@ func replaceAttr(groups []string, a slog.Attr) slog.Attr {
 		}
 
 		return slog.GroupAttrs("error", errorAttrs(err)...)
+	}
+
+	if slices.Contains([]string{"password", "key", "apikey", "secret", "pin", "creditcardno", "user"}, a.Key) {
+		return slog.String(a.Key, "[REDACTED]")
+	}
+
+	if strings.Contains(strings.ToLower(a.Key), "url") {
+		parsedUrl, err := url.Parse(a.Value.String())
+		if err != nil || parsedUrl.User == nil {
+			return a
+		}
+
+		parsedUrl.User = url.UserPassword(parsedUrl.User.Username(), "REDACTED")
+
+		return slog.String(a.Key, parsedUrl.String())
 	}
 
 	return a
