@@ -1,0 +1,1 @@
+curl -u frodo:ofTheNineFingers "http://localhost:8899/debug/pprof/profile?seconds=30" --output cpu.prof
