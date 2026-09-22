@@ -24,41 +24,47 @@ var allowedUsers = map[string]string{
 
 func (s *server) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := tracer.Start(r.Context(), "middleware.auth")
+		defer span.End()
+
 		username, password, ok := r.BasicAuth()
 		if !ok {
-			httpError(r.Context(), w, http.StatusUnauthorized, errors.New("unauthorized"))
+			httpError(ctx, w, http.StatusUnauthorized, errors.New("unauthorized"))
 			return
 		}
 		stored, exists := allowedUsers[username]
 		if !exists {
-			httpError(r.Context(), w, http.StatusUnauthorized, errors.New("unauthorized"))
+			httpError(ctx, w, http.StatusUnauthorized, errors.New("unauthorized"))
 			return
 		}
-		ok, err := s.validatePassword(password, stored)
+		ok, err := s.validatePassword(ctx, password, stored)
 		if err != nil {
 			s.logger.Error("error validating password",
 				"user", username,
 				"error", err,
 			)
-			httpError(r.Context(), w, http.StatusInternalServerError, err)
+			httpError(ctx, w, http.StatusInternalServerError, err)
 			return
 		}
 		if !ok {
-			httpError(r.Context(), w, http.StatusUnauthorized, errors.New("unauthorized"))
+			httpError(ctx, w, http.StatusUnauthorized, errors.New("unauthorized"))
 			return
 		}
 
-		if logContext, ok := r.Context().Value(logContextKey).(*LogContext); ok {
+		if logContext, ok := ctx.Value(logContextKey).(*LogContext); ok {
 			logContext.Username = username
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), UserContextKey, username))
+		r = r.WithContext(context.WithValue(ctx, UserContextKey, username))
 
 		next.ServeHTTP(w, r)
 	})
 }
 
-func (s *server) validatePassword(password, stored string) (bool, error) {
+func (s *server) validatePassword(ctx context.Context, password, stored string) (bool, error) {
+	_, span := tracer.Start(ctx, "auth.validate_password")
+	defer span.End()
+
 	err := bcrypt.CompareHashAndPassword([]byte(stored), []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {
 		return false, nil
