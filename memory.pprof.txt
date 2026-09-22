@@ -1,0 +1,37 @@
+File: linko
+Type: inuse_space
+Time: 2026-09-22 12:28:14 -05
+Duration: 30.01s, Total samples = 7192.98kB 
+Showing nodes accounting for 3260.99kB, 45.34% of 7192.98kB total
+      flat  flat%   sum%        cum   cum%
+ 5226.98kB 72.67% 72.67%  5226.98kB 72.67%  internal/bytealg.MakeNoZero
+ -732.77kB 10.19% 62.48%  -732.77kB 10.19%  compress/flate.newFastEnc (inline)
+ -688.56kB  9.57% 52.91%  -688.56kB  9.57%  compress/flate.(*fastGen).addBlock
+ -544.67kB  7.57% 45.34% -1277.44kB 17.76%  compress/flate.(*compressor).init
+         0     0% 45.34% -1277.44kB 17.76%  bufio.(*Writer).Flush
+         0     0% 45.34%  -688.56kB  9.57%  compress/flate.(*Writer).Close (inline)
+         0     0% 45.34%  -688.56kB  9.57%  compress/flate.(*compressor).close
+         0     0% 45.34%  -688.56kB  9.57%  compress/flate.(*compressor).deflateFast
+         0     0% 45.34%  -688.56kB  9.57%  compress/flate.(*fastEncL6).encode
+         0     0% 45.34% -1277.44kB 17.76%  compress/flate.NewWriter (inline)
+         0     0% 45.34%  -688.56kB  9.57%  compress/gzip.(*Writer).Close
+         0     0% 45.34% -1277.44kB 17.76%  compress/gzip.(*Writer).Write
+         0     0% 45.34% -1965.99kB 27.33%  github.com/prometheus/client_golang/prometheus/promhttp.HandlerForTransactional.func1
+         0     0% 45.34% -1965.99kB 27.33%  github.com/prometheus/client_golang/prometheus/promhttp.InstrumentHandlerCounter.func1
+         0     0% 45.34% -1965.99kB 27.33%  github.com/prometheus/client_golang/prometheus/promhttp.InstrumentHandlerInFlight.func1
+         0     0% 45.34%  -688.56kB  9.57%  github.com/prometheus/client_golang/prometheus/promhttp.negotiateEncodingWriter.func3
+         0     0% 45.34% -1277.44kB 17.76%  github.com/prometheus/common/expfmt.MetricFamilyToText
+         0     0% 45.34% -1277.44kB 17.76%  github.com/prometheus/common/expfmt.MetricFamilyToText.func1
+         0     0% 45.34% -1277.44kB 17.76%  github.com/prometheus/common/expfmt.NewEncoder.func7
+         0     0% 45.34% -1277.44kB 17.76%  github.com/prometheus/common/expfmt.encoderCloser.Encode
+         0     0% 45.34%  5226.98kB 72.67%  main.(*server).handlerRedirect
+         0     0% 45.34%  3260.99kB 45.34%  main.metricsMiddleware.func1
+         0     0% 45.34%  3260.99kB 45.34%  main.requestIdMiddleware.func1
+         0     0% 45.34%  3260.99kB 45.34%  main.requestLogger.func1.func1
+         0     0% 45.34%  3260.99kB 45.34%  net/http.(*ServeMux).ServeHTTP
+         0     0% 45.34%  3260.99kB 45.34%  net/http.(*conn).serve
+         0     0% 45.34%  3260.99kB 45.34%  net/http.HandlerFunc.ServeHTTP
+         0     0% 45.34%  3260.99kB 45.34%  net/http.serverHandler.ServeHTTP
+         0     0% 45.34%  5226.98kB 72.67%  strings.(*Builder).Grow
+         0     0% 45.34%  5226.98kB 72.67%  strings.(*Builder).grow
+         0     0% 45.34%  5226.98kB 72.67%  strings.Repeat
